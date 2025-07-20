@@ -21,14 +21,27 @@ class BeaconChainDownloadPipelineFactory {
   fun createPipeline(): Pipeline<SyncTargetRange?> {
     val downloaderParallelism = 1
     val metricsSystem = NoOpMetricsSystem()
-    val validatorSyncSource = ValidatorSyncSource(startBlock = 0uL, targetBlock = 0uL, requestSize = 64u)
+    val startBlock = 0uL
+    val targetBlock = 0uL
+    val requestSize = 64u
+
+    val syncTargetRangeSequence =
+      sequence {
+        var currentStart = startBlock
+        while (currentStart <= targetBlock) {
+          val currentEnd = minOf(currentStart + requestSize.toULong(), targetBlock)
+          yield(SyncTargetRange(currentStart, currentEnd))
+          currentStart = currentEnd + 1uL
+        }
+      }
+
     val downloadBlocksStep = DownloadBlocksStep()
     val importBlocksStep = ImportBlocksStep()
 
     return PipelineBuilder
       .createPipelineFrom(
         "blockNumbers",
-        validatorSyncSource,
+        syncTargetRangeSequence.iterator(),
         downloaderParallelism,
         metricsSystem.createLabelledCounter(
           org.hyperledger.besu.metrics.BesuMetricCategory.SYNCHRONIZER,
