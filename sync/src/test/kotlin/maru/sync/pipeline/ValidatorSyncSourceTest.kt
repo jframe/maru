@@ -38,7 +38,6 @@ class ValidatorSyncSourceTest {
   fun `returns no ranges if startBlock equals targetBlock`() {
     val source = ValidatorSyncSource(startBlock = 100u, targetBlock = 100u, requestSize = 10u)
     assertThat(source.hasNext()).isFalse()
-    assertThat(source.next()).isNull()
   }
 
   @Test
@@ -47,13 +46,5 @@ class ValidatorSyncSourceTest {
     val range = source.next()
     assertThat(range).isEqualTo(SyncTargetRange(1u, 5u))
     assertThat(source.hasNext()).isFalse()
-  }
-
-  @Test
-  fun `returns null after all ranges are produced`() {
-    val source = ValidatorSyncSource(startBlock = 0u, targetBlock = 20u, requestSize = 10u)
-    repeat(2) { source.next() }
-    assertThat(source.hasNext()).isFalse()
-    assertThat(source.next()).isNull()
   }
 }

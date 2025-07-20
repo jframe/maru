@@ -14,14 +14,14 @@ class ValidatorSyncSource(
   private val startBlock: ULong,
   private val targetBlock: ULong,
   private val requestSize: UInt,
-) : Iterator<SyncTargetRange?> {
+) : Iterator<SyncTargetRange> {
   private var lastRange: SyncTargetRange? = null
 
   override fun hasNext(): Boolean = !hasReachedTarget
 
-  override fun next(): SyncTargetRange? =
+  override fun next(): SyncTargetRange =
     when {
-      hasReachedTarget -> null
+      hasReachedTarget -> throw NoSuchElementException("No more ranges to sync. Current last range: $lastRange")
       lastRange == null -> createFirstRange().also { lastRange = it }
       else -> createNextRange(lastRange!!).also { lastRange = it }
     }

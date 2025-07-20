@@ -12,8 +12,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.function.Function
 import maru.core.SealedBeaconBlock
 
-class DownloadBlocksStep : Function<SyncTargetRange?, CompletableFuture<List<SealedBeaconBlock>>> {
-  override fun apply(targetRange: SyncTargetRange?): CompletableFuture<List<SealedBeaconBlock>> {
+class DownloadBlocksStep : Function<SyncTargetRange, CompletableFuture<List<SealedBeaconBlock>>> {
+  override fun apply(targetRange: SyncTargetRange): CompletableFuture<List<SealedBeaconBlock>> {
     TODO("Not yet implemented")
   }
 }
