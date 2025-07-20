@@ -8,6 +8,7 @@
  */
 package maru.sync.pipeline
 
+import maru.p2p.PeerLookup
 import org.hyperledger.besu.metrics.noop.NoOpMetricsSystem
 import org.hyperledger.besu.services.pipeline.Pipeline
 import org.hyperledger.besu.services.pipeline.PipelineBuilder
@@ -16,9 +17,10 @@ class BeaconChainDownloadPipelineFactory {
   /**
    * Creates a pipeline for downloading blocks from the beacon chain.
    *
+   * @param peerLookup The PeerLookup to use for selecting peers for downloading blocks
    * @return A [Pipeline] that processes [SyncTargetRange] objects.
    */
-  fun createPipeline(): Pipeline<SyncTargetRange?> {
+  fun createPipeline(peerLookup: PeerLookup): Pipeline<SyncTargetRange?> {
     val downloaderParallelism = 1
     val metricsSystem = NoOpMetricsSystem()
     val startBlock = 0uL
@@ -35,7 +37,7 @@ class BeaconChainDownloadPipelineFactory {
         }
       }
 
-    val downloadBlocksStep = DownloadBlocksStep()
+    val downloadBlocksStep = DownloadBlocksStep(peerLookup)
     val importBlocksStep = ImportBlocksStep()
 
     return PipelineBuilder

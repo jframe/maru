@@ -11,9 +11,18 @@ package maru.sync.pipeline
 import java.util.concurrent.CompletableFuture
 import java.util.function.Function
 import maru.core.SealedBeaconBlock
+import maru.p2p.PeerLookup
 
-class DownloadBlocksStep : Function<SyncTargetRange, CompletableFuture<List<SealedBeaconBlock>>> {
+class DownloadBlocksStep(
+  private val peerLookup: PeerLookup,
+) : Function<SyncTargetRange, CompletableFuture<List<SealedBeaconBlock>>> {
   override fun apply(targetRange: SyncTargetRange): CompletableFuture<List<SealedBeaconBlock>> {
-    TODO("Not yet implemented")
+    val startBlockNumber = targetRange.startBlock
+    val count = targetRange.endBlock - targetRange.startBlock + 1uL
+    val peer = peerLookup.getPeers().random()
+    return peer
+      .sendBeaconBlocksByRange(startBlockNumber, count)
+      .toCompletableFuture()
+      .thenApply { response -> response.blocks }
   }
 }
