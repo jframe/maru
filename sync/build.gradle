@@ -13,6 +13,7 @@ dependencies {
   implementation 'tech.pegasys.teku.internal:async'
   implementation 'tech.pegasys.teku.internal:p2p'
   implementation 'org.apache.logging.log4j:log4j-api'
+  implementation("org.hyperledger.besu.internal:besu-crypto-algorithms")
 
   testImplementation platform('org.junit:junit-bom')
   testImplementation(testFixtures(project(":core")))
