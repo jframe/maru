@@ -40,6 +40,6 @@ class BeaconChainDownloadPipelineFactory {
         true,
         "importBlocks",
       ).thenProcessAsync("downloadBlocks", downloadBlocksStep, downloaderParallelism)
-      .andFinishWith("saveHeader", importBlocksStep)
+      .andFinishWith("importBlocks", importBlocksStep)
   }
 }
