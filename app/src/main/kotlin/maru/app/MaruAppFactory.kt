@@ -166,7 +166,7 @@ class MaruAppFactory {
 
     val syncService =
       SyncService(
-        peerLookup = p2pNetwork,
+        peerLookup = p2pNetwork.getPeerLookup(),
         beaconChain = beaconChain,
         validators = emptySet(),
       )

@@ -21,10 +21,10 @@ import maru.consensus.ForkSpec
 import maru.consensus.ForksSchedule
 import maru.core.BeaconState
 import maru.core.SealedBeaconBlock
-import maru.core.ext.DataGenerators
 import maru.core.ext.metrics.TestMetrics
 import maru.crypto.Hashing
 import maru.database.InMemoryBeaconChain
+import maru.p2p.ext.DataGenerators
 import maru.p2p.messages.Status
 import maru.p2p.messages.StatusMessageFactory
 import maru.serialization.ForkIdSerializers
@@ -41,6 +41,7 @@ import tech.pegasys.teku.infrastructure.async.SafeFuture
 import tech.pegasys.teku.networking.p2p.libp2p.LibP2PNodeId
 import tech.pegasys.teku.networking.p2p.libp2p.MultiaddrPeerAddress
 import tech.pegasys.teku.networking.p2p.peer.DisconnectReason
+import maru.core.ext.DataGenerators as CoreDataGenerators
 
 @Execution(ExecutionMode.SAME_THREAD)
 class P2PTest {
@@ -76,7 +77,7 @@ class P2PTest {
     private val key2 = Bytes.fromHexString(PRIVATE_KEY2).toArray()
     private val key3 = Bytes.fromHexString(PRIVATE_KEY3).toArray()
     private val initialExpectedBeaconBlockNumber = 1UL
-    private val beaconChain = InMemoryBeaconChain(DataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
+    private val beaconChain = InMemoryBeaconChain(CoreDataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
     private val forkIdHashProvider =
       createForkIdHashProvider()
     private val statusMessageFactory = StatusMessageFactory(beaconChain, forkIdHashProvider)
@@ -101,8 +102,8 @@ class P2PTest {
         QbftConsensusConfig(
           validatorSet =
             setOf(
-              DataGenerators.randomValidator(),
-              DataGenerators.randomValidator(),
+              CoreDataGenerators.randomValidator(),
+              CoreDataGenerators.randomValidator(),
             ),
           elFork = ElFork.Prague,
         )
@@ -546,7 +547,7 @@ class P2PTest {
           latestBlockNumber = latestBeaconBlockHeader.number,
         )
       val peer1 =
-        p2pManagerImpl2.peerLookup.getPeer(LibP2PNodeId(PeerId.fromBase58(PEER_ID_NODE_1)))
+        p2pManagerImpl2.getPeerLookup().getPeer(LibP2PNodeId(PeerId.fromBase58(PEER_ID_NODE_1)))
           ?: throw IllegalStateException("Peer with ID $PEER_ID_NODE_1 not found in p2pManagerImpl2")
       val maruPeer1 = DefaultMaruPeer(peer1, rpcMethods, statusMessageFactory)
 
@@ -565,10 +566,10 @@ class P2PTest {
   @Test
   fun `peer can send beacon blocks by range request`() {
     // Set up beacon chain with some blocks
-    val testBeaconChain = InMemoryBeaconChain(DataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
+    val testBeaconChain = InMemoryBeaconChain(CoreDataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
     val storedBlocks =
       (0UL..10UL).map { blockNumber ->
-        DataGenerators.randomSealedBeaconBlock(number = blockNumber)
+        CoreDataGenerators.randomSealedBeaconBlock(number = blockNumber)
       }
 
     testBeaconChain.newUpdater().use { updater ->
@@ -578,7 +579,7 @@ class P2PTest {
       updater.putBeaconState(
         BeaconState(
           latestBeaconBlockHeader = storedBlocks.last().beaconBlock.beaconBlockHeader,
-          validators = DataGenerators.randomValidators(),
+          validators = CoreDataGenerators.randomValidators(),
         ),
       )
       updater.commit()
@@ -628,7 +629,7 @@ class P2PTest {
       awaitUntilAsserted { assertNetworkHasPeers(network = p2pManagerImpl2, peers = 1) }
 
       val peer1 =
-        p2pManagerImpl2.peerLookup.getPeer(LibP2PNodeId(PeerId.fromBase58(PEER_ID_NODE_1)))
+        p2pManagerImpl2.getPeerLookup().getPeer(LibP2PNodeId(PeerId.fromBase58(PEER_ID_NODE_1)))
           ?: throw IllegalStateException("Peer with ID $PEER_ID_NODE_1 not found in p2pManagerImpl2")
 
       val startBlockNumber = 3UL
