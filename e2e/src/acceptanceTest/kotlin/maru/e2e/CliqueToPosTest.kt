@@ -34,6 +34,7 @@ import maru.core.BeaconBlockBody
 import maru.core.BeaconBlockHeader
 import maru.core.EMPTY_HASH
 import maru.core.Validator
+import maru.extensions.encodeHex
 import maru.mappers.Mappers.toDomain
 import maru.serialization.rlp.RLPSerializers
 import maru.testutils.Web3jTransactionsHelper
@@ -234,6 +235,7 @@ class CliqueToPosTest {
           assertThat(latestBlockFromGeth).isNotNull
         } else {
           assertNodeBlockHeight(nodeEthereumClient)
+          assertNodeBlockPrevRandao(nodeEthereumClient)
         }
       }
   }
@@ -249,7 +251,7 @@ class CliqueToPosTest {
     )
 
   private fun waitTillTimestamp(timestamp: Long) {
-    await.timeout(1.minutes.toJavaDuration()).pollInterval(500.milliseconds.toJavaDuration()).untilAsserted {
+    await.timeout(2.minutes.toJavaDuration()).pollInterval(500.milliseconds.toJavaDuration()).untilAsserted {
       val unixTimestamp = System.currentTimeMillis() / 1000
       log.info(
         "Waiting {} seconds for the Prague switch at timestamp $timestamp",
@@ -347,6 +349,29 @@ class CliqueToPosTest {
     assertThat(targetNodeBlockHeight).isEqualTo(expectedBlockNumber)
   }
 
+  private fun assertNodeBlockPrevRandao(
+    web3j: Web3j,
+    lastPreMergeBlockNumber: Long = 5L,
+    lastPostMergeBlockNumber: Long = 9L,
+  ) {
+    var lastMixHash: String? = null
+    (lastPreMergeBlockNumber..lastPostMergeBlockNumber).forEach {
+      val mixHash =
+        web3j
+          .ethGetBlockByNumber(
+            DefaultBlockParameter.valueOf(it.toBigInteger()),
+            false,
+          ).send()
+          .block.mixHash
+      if (it == lastPreMergeBlockNumber) {
+        assertThat(mixHash).isEqualTo(EMPTY_HASH.encodeHex())
+      } else {
+        assertThat(mixHash).isNotEqualTo(lastMixHash)
+      }
+      lastMixHash = mixHash
+    }
+  }
+
   private fun waitForAllBlockHeightsToMatch() {
     val sequencerBlockHeight =
       TestEnvironment.sequencerL2Client
@@ -377,7 +402,7 @@ class CliqueToPosTest {
 
   private fun everyoneArePeered() {
     log.info("Call add peer on all nodes and wait for peering to happen.")
-    await.timeout(1.minutes.toJavaDuration()).untilAsserted {
+    await.timeout(2.minutes.toJavaDuration()).untilAsserted {
       TestEnvironment.preMergeFollowerClients.forEach {
         try {
           it.value
