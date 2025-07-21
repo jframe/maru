@@ -8,9 +8,10 @@
  */
 package maru.sync.pipeline
 
-import maru.core.Validator
+import maru.consensus.blockimport.SealedBeaconBlockImporter
 import maru.database.BeaconChain
 import maru.p2p.PeerLookup
+import maru.p2p.ValidationResult
 import org.hyperledger.besu.metrics.BesuMetricCategory
 import org.hyperledger.besu.metrics.noop.NoOpMetricsSystem
 import org.hyperledger.besu.services.pipeline.Pipeline
@@ -18,7 +19,7 @@ import org.hyperledger.besu.services.pipeline.PipelineBuilder
 
 class BeaconChainDownloadPipelineFactory(
   private val beaconChain: BeaconChain,
-  private val validators: Set<Validator>,
+  private val blockImporter: SealedBeaconBlockImporter<ValidationResult>,
 ) {
   fun createPipeline(peerLookup: PeerLookup): Pipeline<SyncTargetRange?> {
     val downloaderParallelism = 1
@@ -38,7 +39,7 @@ class BeaconChainDownloadPipelineFactory(
       }
 
     val downloadBlocksStep = DownloadBlocksStep(peerLookup)
-    val importBlocksStep = ImportBlocksStep(beaconChain, validators.toList())
+    val importBlocksStep = ImportBlocksStep(blockImporter)
 
     return PipelineBuilder
       .createPipelineFrom(
