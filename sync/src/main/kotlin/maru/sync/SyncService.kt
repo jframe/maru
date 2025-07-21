@@ -56,9 +56,9 @@ class SyncService(
   }
 
   fun stop() {
+    // TODO should the executor service be stopped here?
     log.info("Stopping SyncService")
     pipeline?.abort()
-    executorService.shutdown()
     log.info("SyncService stopped")
   }
 
