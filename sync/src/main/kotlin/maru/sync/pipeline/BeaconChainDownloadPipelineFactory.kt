@@ -8,23 +8,23 @@
  */
 package maru.sync.pipeline
 
+import maru.core.Validator
+import maru.database.BeaconChain
 import maru.p2p.PeerLookup
+import org.hyperledger.besu.metrics.BesuMetricCategory
 import org.hyperledger.besu.metrics.noop.NoOpMetricsSystem
 import org.hyperledger.besu.services.pipeline.Pipeline
 import org.hyperledger.besu.services.pipeline.PipelineBuilder
 
-class BeaconChainDownloadPipelineFactory {
-  /**
-   * Creates a pipeline for downloading blocks from the beacon chain.
-   *
-   * @param peerLookup The PeerLookup to use for selecting peers for downloading blocks
-   * @return A [Pipeline] that processes [SyncTargetRange] objects.
-   */
+class BeaconChainDownloadPipelineFactory(
+  private val beaconChain: BeaconChain,
+  private val validators: Set<Validator>,
+) {
   fun createPipeline(peerLookup: PeerLookup): Pipeline<SyncTargetRange?> {
     val downloaderParallelism = 1
     val metricsSystem = NoOpMetricsSystem()
     val startBlock = 0uL
-    val targetBlock = 0uL
+    val targetBlock = beaconChain.getLatestBeaconState().latestBeaconBlockHeader.number
     val requestSize = 64u
 
     val syncTargetRangeSequence =
@@ -38,7 +38,7 @@ class BeaconChainDownloadPipelineFactory {
       }
 
     val downloadBlocksStep = DownloadBlocksStep(peerLookup)
-    val importBlocksStep = ImportBlocksStep()
+    val importBlocksStep = ImportBlocksStep(beaconChain, validators.toList())
 
     return PipelineBuilder
       .createPipelineFrom(
@@ -46,7 +46,7 @@ class BeaconChainDownloadPipelineFactory {
         syncTargetRangeSequence.iterator(),
         downloaderParallelism,
         metricsSystem.createLabelledCounter(
-          org.hyperledger.besu.metrics.BesuMetricCategory.SYNCHRONIZER,
+          BesuMetricCategory.SYNCHRONIZER,
           "chain_download_pipeline_processed_total",
           "Number of entries process by each chain download pipeline stage",
           "step",
@@ -54,7 +54,7 @@ class BeaconChainDownloadPipelineFactory {
         ),
         true,
         "importBlocks",
-      ).thenProcessAsync("downloadBlocks", downloadBlocksStep, downloaderParallelism)
+      ).thenProcessAsyncOrdered("downloadBlocks", downloadBlocksStep, downloaderParallelism)
       .andFinishWith("importBlocks", importBlocksStep)
   }
 }

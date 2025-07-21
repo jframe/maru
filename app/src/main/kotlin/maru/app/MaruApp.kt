@@ -36,6 +36,7 @@ import maru.metrics.MaruMetricsCategory
 import maru.p2p.P2PNetwork
 import maru.p2p.SealedBeaconBlockBroadcaster
 import maru.p2p.ValidationResult
+import maru.sync.SyncService
 import net.consensys.linea.async.get
 import net.consensys.linea.metrics.MetricsFacade
 import net.consensys.linea.vertx.ObservabilityServer
@@ -60,6 +61,7 @@ class MaruApp(
   private val lastBlockMetadataCache: LatestBlockMetadataCache,
   private val ethereumJsonRpcClient: Web3JClient,
   private val apiServer: ApiServer,
+  private val syncService: SyncService,
 ) : AutoCloseable {
   private val log: Logger = LogManager.getLogger(this::javaClass)
 
@@ -126,6 +128,12 @@ class MaruApp(
       throw th
     }
     apiServer.start()
+    try {
+      syncService.start().get()
+    } catch (th: Throwable) {
+      log.error("Error while trying to start the sync service", th)
+      throw th
+    }
     log.info("Maru is up")
   }
 
@@ -144,6 +152,11 @@ class MaruApp(
     }
     protocolStarter.stop()
     apiServer.stop()
+    try {
+      syncService.stop()
+    } catch (th: Throwable) {
+      log.warn("Error while trying to stop the sync service", th)
+    }
     log.info("Maru is down")
   }
 

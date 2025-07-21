@@ -60,7 +60,7 @@ class ImportBlocksStep(
         beaconChain = beaconChain,
         stateTransition = stateTransition,
         beaconBlockImporter = { _, _ ->
-          // No-op BeaconBlockImporter since we're not using engine API
+          // TODO store in database
           SafeFuture.completedFuture(Unit)
         },
       )
