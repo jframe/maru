@@ -36,7 +36,7 @@ import org.hyperledger.besu.ethereum.core.Transaction
 object DataGenerators {
   fun randomBeaconState(
     number: ULong,
-    timestamp: ULong = Random.nextULong(),
+    timestamp: ULong = randomPositiveULong(),
   ): BeaconState {
     val validators = randomValidators()
     val beaconBlockHeader =
@@ -91,7 +91,7 @@ object DataGenerators {
     BeaconBlockHeader(
       number = number,
       round = Random.nextUInt(),
-      timestamp = Random.nextULong(),
+      timestamp = randomPositiveULong(),
       proposer = proposer,
       parentRoot = Random.nextBytes(32),
       stateRoot = Random.nextBytes(32),
@@ -151,4 +151,6 @@ object DataGenerators {
 
   fun randomValidPayloadStatus(): PayloadStatus =
     PayloadStatus(ExecutionPayloadStatus.VALID, latestValidHash = Random.nextBytes(32), validationError = null)
+
+  fun randomPositiveULong(): ULong = Random.nextLong(1, Long.MAX_VALUE).toULong()
 }
