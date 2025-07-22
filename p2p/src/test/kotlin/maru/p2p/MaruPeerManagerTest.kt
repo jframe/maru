@@ -67,10 +67,6 @@ class MaruPeerManagerTest {
     whenever(maruPeerFactory.createMaruPeer(mockPeer2)).thenReturn(peer2)
     whenever(maruPeerFactory.createMaruPeer(mockPeer3)).thenReturn(peer3)
 
-    whenever(peer1.connectionInitiatedLocally()).thenReturn(true)
-    whenever(peer2.connectionInitiatedLocally()).thenReturn(true)
-    whenever(peer3.connectionInitiatedLocally()).thenReturn(true)
-
     val status1 = Status(Random.nextBytes(32), Random.nextBytes(32), Random.nextULong())
     val status2 = Status(Random.nextBytes(32), Random.nextBytes(32), Random.nextULong())
     val status3 = Status(Random.nextBytes(32), Random.nextBytes(32), Random.nextULong())
@@ -87,10 +83,10 @@ class MaruPeerManagerTest {
     // Execute the periodicallyUpdateStatus method directly
     maruPeerManager.periodicallyUpdateStatus()
 
-    // Verify sendStatus was called on each peer (once on connect, once on periodic update)
-    verify(peer1, times(2)).sendStatus()
-    verify(peer2, times(2)).sendStatus()
-    verify(peer3, times(2)).sendStatus()
+    // Verify sendStatus was called on each peer
+    verify(peer1).sendStatus()
+    verify(peer2).sendStatus()
+    verify(peer3).sendStatus()
   }
 
   @Test
@@ -133,5 +129,4 @@ class MaruPeerManagerTest {
     verify(peer1, times(2)).sendStatus()
     verify(peer2, times(2)).sendStatus()
   }
-
 }
