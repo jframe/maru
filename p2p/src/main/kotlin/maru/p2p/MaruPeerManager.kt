@@ -16,8 +16,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.collections.contains
-import kotlin.collections.remove
+import java.util.function.Consumer
 import maru.config.P2P
 import maru.p2p.discovery.MaruDiscoveryPeer
 import maru.p2p.discovery.MaruDiscoveryService
@@ -32,6 +31,7 @@ import tech.pegasys.teku.networking.p2p.peer.NodeId
 import tech.pegasys.teku.networking.p2p.peer.Peer
 
 private const val STATUS_TIMEOUT_SECONDS = 10L
+private const val PEER_UPDATE_MINUTES = 5L
 
 class MaruPeerManager(
   private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
@@ -47,6 +47,21 @@ class MaruPeerManager(
   private var discoveryService: MaruDiscoveryService? = null
   private lateinit var p2pNetwork: tech.pegasys.teku.networking.p2p.network.P2PNetwork<Peer>
   private var stopCalled = false
+
+  init {
+    scheduler.scheduleAtFixedRate(
+      this::logConnectedPeers,
+      30,
+      30,
+      TimeUnit.SECONDS,
+    )
+    scheduler.scheduleAtFixedRate(
+      this::periodicallyUpdateStatus,
+      PEER_UPDATE_MINUTES,
+      PEER_UPDATE_MINUTES,
+      TimeUnit.MINUTES,
+    )
+  }
 
   fun start(
     discoveryService: MaruDiscoveryService?,
@@ -93,12 +108,6 @@ class MaruPeerManager(
 
   private val connectedPeers: ConcurrentHashMap<NodeId, MaruPeer> = ConcurrentHashMap()
 
-  init {
-    scheduler.scheduleAtFixedRate({
-      logConnectedPeers()
-    }, 30, 30, TimeUnit.SECONDS)
-  }
-
   private fun logConnectedPeers() {
     val peerIds = connectedPeers.keys.joinToString(", ") { it.toString() }
     log.info("Currently connected peers: [$peerIds]")
@@ -128,6 +137,17 @@ class MaruPeerManager(
         )
       }
     }, STATUS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+  }
+
+  internal fun periodicallyUpdateStatus() {
+    connectedPeers.values.forEach { peer ->
+      peer
+        .sendStatus()
+        .finish(
+          Runnable { log.trace("Updated status for peer {}", peer) },
+          Consumer { err: Throwable -> log.debug("Exception updating status for peer {}", peer, err) },
+        )
+    }
   }
 
   override fun onDisconnect(peer: Peer) {
