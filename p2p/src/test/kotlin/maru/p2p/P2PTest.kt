@@ -548,14 +548,17 @@ class P2PTest {
       val peer1 =
         p2pManagerImpl2.peerLookup.getPeer(LibP2PNodeId(PeerId.fromBase58(PEER_ID_NODE_1)))
           ?: throw IllegalStateException("Peer with ID $PEER_ID_NODE_1 not found in p2pManagerImpl2")
-      val maruPeer1 = DefaultMaruPeer(peer1, rpcMethods, statusMessageFactory)
+      val peer2 =
+        p2PNetworkImpl1.peerLookup.getPeer(LibP2PNodeId(PeerId.fromBase58(PEER_ID_NODE_2)))
+          ?: throw IllegalStateException("Peer with ID $PEER_ID_NODE_2 not found in p2pManagerImpl1")
 
-      val responseFuture = maruPeer1.sendStatus()
+      val responseFuture = peer1.sendStatus()
 
       assertThatNoException().isThrownBy { responseFuture.get(500L, TimeUnit.MILLISECONDS) }
       assertThat(
         responseFuture.get(500L, TimeUnit.MILLISECONDS),
       ).isEqualTo(expectedStatus)
+      assertThat(peer2.getStatus()).isEqualTo(expectedStatus)
     } finally {
       p2PNetworkImpl1.stop()
       p2pManagerImpl2.stop()
