@@ -9,14 +9,14 @@
 package maru.p2p.ext
 
 import maru.core.SealedBeaconBlock
+import maru.core.ext.DataGenerators
 import maru.p2p.GossipMessageType
 import maru.p2p.Message
 import maru.p2p.Version
-import maru.core.ext.DataGenerators as CoreDataGenerators
 
 object DataGenerators {
   fun randomBlockMessage(blockNumber: ULong = 1uL): Message<SealedBeaconBlock, GossipMessageType> {
-    val sealedBeaconBlock = CoreDataGenerators.randomSealedBeaconBlock(blockNumber)
+    val sealedBeaconBlock = DataGenerators.randomSealedBeaconBlock(blockNumber)
     return Message(GossipMessageType.BEACON_BLOCK, Version.V1, sealedBeaconBlock)
   }
 }

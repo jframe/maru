@@ -21,10 +21,10 @@ import maru.consensus.ForkSpec
 import maru.consensus.ForksSchedule
 import maru.core.BeaconState
 import maru.core.SealedBeaconBlock
+import maru.core.ext.DataGenerators
 import maru.core.ext.metrics.TestMetrics
 import maru.crypto.Hashing
 import maru.database.InMemoryBeaconChain
-import maru.p2p.ext.DataGenerators
 import maru.p2p.messages.Status
 import maru.p2p.messages.StatusMessageFactory
 import maru.serialization.ForkIdSerializers
@@ -41,7 +41,7 @@ import tech.pegasys.teku.infrastructure.async.SafeFuture
 import tech.pegasys.teku.networking.p2p.libp2p.LibP2PNodeId
 import tech.pegasys.teku.networking.p2p.libp2p.MultiaddrPeerAddress
 import tech.pegasys.teku.networking.p2p.peer.DisconnectReason
-import maru.core.ext.DataGenerators as CoreDataGenerators
+import maru.p2p.ext.DataGenerators as P2P2DataGenerators
 
 @Execution(ExecutionMode.SAME_THREAD)
 class P2PTest {
@@ -77,7 +77,7 @@ class P2PTest {
     private val key2 = Bytes.fromHexString(PRIVATE_KEY2).toArray()
     private val key3 = Bytes.fromHexString(PRIVATE_KEY3).toArray()
     private val initialExpectedBeaconBlockNumber = 1UL
-    private val beaconChain = InMemoryBeaconChain(CoreDataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
+    private val beaconChain = InMemoryBeaconChain(DataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
     private val forkIdHashProvider =
       createForkIdHashProvider()
     private val statusMessageFactory = StatusMessageFactory(beaconChain, forkIdHashProvider)
@@ -102,8 +102,8 @@ class P2PTest {
         QbftConsensusConfig(
           validatorSet =
             setOf(
-              CoreDataGenerators.randomValidator(),
-              CoreDataGenerators.randomValidator(),
+              DataGenerators.randomValidator(),
+              DataGenerators.randomValidator(),
             ),
           elFork = ElFork.Prague,
         )
@@ -387,9 +387,11 @@ class P2PTest {
       awaitUntilAsserted { assertNetworkHasPeers(network = p2pNetworkImpl1, peers = 1) }
       awaitUntilAsserted { assertNetworkHasPeers(network = p2pNetworkImpl2, peers = 1) }
 
-      val randomBlockMessage1 = DataGenerators.randomBlockMessage()
+      val randomBlockMessage1 =
+        maru.p2p.ext.DataGenerators
+          .randomBlockMessage()
       p2pNetworkImpl1.broadcastMessage(randomBlockMessage1).get()
-      val randomBlockMessage2 = DataGenerators.randomBlockMessage(2UL)
+      val randomBlockMessage2 = P2P2DataGenerators.randomBlockMessage(2UL)
       p2pNetworkImpl1.broadcastMessage(randomBlockMessage2).get()
 
       awaitUntilAsserted {
@@ -480,7 +482,7 @@ class P2PTest {
       sleep(1100L) // to make sure that the peers have communicated that they have subscribed to the topic
       // This sleep can be decreased if the heartbeat is decreased (set to 1s for now, see P2PNetworkFactory) in the GossipRouter
 
-      val randomBlockMessage = DataGenerators.randomBlockMessage()
+      val randomBlockMessage = P2P2DataGenerators.randomBlockMessage()
       p2PNetworkImpl1.broadcastMessage(randomBlockMessage)
 
       assertThat(
@@ -566,10 +568,10 @@ class P2PTest {
   @Test
   fun `peer can send beacon blocks by range request`() {
     // Set up beacon chain with some blocks
-    val testBeaconChain = InMemoryBeaconChain(CoreDataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
+    val testBeaconChain = InMemoryBeaconChain(DataGenerators.randomBeaconState(number = 0u, timestamp = 0u))
     val storedBlocks =
       (0UL..10UL).map { blockNumber ->
-        CoreDataGenerators.randomSealedBeaconBlock(number = blockNumber)
+        DataGenerators.randomSealedBeaconBlock(number = blockNumber)
       }
 
     testBeaconChain.newUpdater().use { updater ->
@@ -579,7 +581,7 @@ class P2PTest {
       updater.putBeaconState(
         BeaconState(
           latestBeaconBlockHeader = storedBlocks.last().beaconBlock.beaconBlockHeader,
-          validators = CoreDataGenerators.randomValidators(),
+          validators = DataGenerators.randomValidators(),
         ),
       )
       updater.commit()
