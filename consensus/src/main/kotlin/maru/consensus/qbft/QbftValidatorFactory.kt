@@ -34,6 +34,7 @@ import maru.consensus.qbft.adapters.QbftProtocolScheduleAdapter
 import maru.consensus.qbft.adapters.QbftValidatorModeTransitionLoggerAdapter
 import maru.consensus.qbft.adapters.QbftValidatorProviderAdapter
 import maru.consensus.qbft.adapters.toSealedBeaconBlock
+import maru.consensus.qbft.gossip.QbftSubscriptionManager
 import maru.consensus.state.FinalizationProvider
 import maru.consensus.state.StateTransition
 import maru.consensus.state.StateTransitionImpl
@@ -84,6 +85,10 @@ class QbftValidatorFactory(
   private val p2PNetwork: P2PNetwork,
   private val allowEmptyBlocks: Boolean,
 ) : ProtocolFactory {
+  
+  // Expose the subscription manager so P2P network can register with it
+  val qbftSubscriptionManager = QbftSubscriptionManager()
+  
   override fun create(forkSpec: ForkSpec): Protocol {
     val protocolConfig = forkSpec.configuration as QbftConsensusConfig
     val signatureAlgorithm = SignatureAlgorithmFactory.getInstance()
@@ -241,11 +246,19 @@ class QbftValidatorFactory(
     val eventProcessor = QbftEventProcessor(bftEventQueue, eventMultiplexer)
     val eventQueueExecutor = Executors.newSingleThreadExecutor(Thread.ofPlatform().daemon().factory())
 
+    // Create and start QBFT gossip message handler
+    val qbftGossipMessageHandler = QbftGossipMessageHandler(bftEventQueue, qbftSubscriptionManager)
+    qbftGossipMessageHandler.start()
+
+    // TODO: Register qbftSubscriptionManager with P2P network's QBFT topic handler
+    // This will be done when the P2P network creates the QBFT topic handler
+
     return QbftConsensusValidator(
       qbftController = qbftController,
       eventProcessor = eventProcessor,
       bftExecutors = bftExecutors,
       eventQueueExecutor = eventQueueExecutor,
+      qbftGossipMessageHandler = qbftGossipMessageHandler,
     )
   }
 

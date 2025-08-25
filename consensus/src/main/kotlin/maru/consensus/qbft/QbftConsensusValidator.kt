@@ -18,15 +18,18 @@ class QbftConsensusValidator(
   private val eventProcessor: QbftEventProcessor,
   private val bftExecutors: BftExecutors,
   private val eventQueueExecutor: Executor,
+  private val qbftGossipMessageHandler: QbftGossipMessageHandler,
 ) : Protocol {
   override fun start() {
     eventProcessor.start()
     bftExecutors.start()
     qbftController.start()
     eventQueueExecutor.execute(eventProcessor)
+    // Note: qbftGossipMessageHandler is already started in QbftValidatorFactory
   }
 
   override fun stop() {
+    qbftGossipMessageHandler.stop()
     eventProcessor.stop()
     bftExecutors.stop()
     qbftController.stop()
